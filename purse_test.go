@@ -33,20 +33,20 @@ func TestNew(t *testing.T) {
 		t.Errorf("unexpected error from New() on fixtures directory")
 	}
 
-	if len(fixtures) != len(s.fs) {
+	if len(fixtures) != len(s.items) {
 		t.Errorf("invalid number of loaded SQL files")
 	}
 
 	for key := range fixtures {
-		_, ok := s.fs[key]
+		_, ok := s.items[key]
 		if !ok {
 			t.Errorf("unable to find loaded file %s in file map", key)
 		}
 	}
 
 	// verify only SQL files were loaded
-	for key := range s.fs {
-		if filepath.Ext(key) != ext {
+	for key := range s.items {
+		if filepath.Ext(key) != ".sql" {
 			t.Errorf("loaded unexpected file type: %s", key)
 		}
 	}

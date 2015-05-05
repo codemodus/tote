@@ -4,62 +4,92 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"sync"
+	"unicode"
 )
 
-type purse interface {
+type purser interface {
 	Get(string) (string, bool)
 }
 
-type memoryPurse struct {
-	mu sync.RWMutex
-	fs map[string]string
+type purse struct {
+	items map[string][]item
 }
 
-func newPurse(dir string) (*memoryPurse, error) {
-	f, err := os.Open(dir)
-	if err != nil {
+type item struct {
+	Name  string
+	Query string
+}
+
+func newPurse(dir string) (p *purse, err error) {
+	p = &purse{items: make(map[string][]item)}
+	if _, err = os.Stat(dir); err != nil {
 		return nil, err
 	}
-	defer f.Close()
 
-	fis, err := f.Readdir(-1)
-	if err != nil {
-		return nil, err
-	}
-
-	p := &memoryPurse{fs: make(map[string]string, 0)}
-
-	for _, fi := range fis {
-		if !fi.IsDir() && filepath.Ext(fi.Name()) == ext {
-			f, err := os.Open(filepath.Join(dir, fi.Name()))
+	err = filepath.Walk(dir, func(path string, i os.FileInfo, e error) error {
+		if e != nil {
+			return e
+		}
+		if !i.IsDir() && filepath.Ext(path) == ".sql" {
+			f, err := os.Open(path)
 			if err != nil {
-				return nil, err
+				return err
 			}
+			defer f.Close()
+
 			b, err := ioutil.ReadAll(f)
 			if err != nil {
-				return nil, err
+				return err
 			}
-			p.fs[fi.Name()] = string(b)
-			f.Close()
+			p.items[path2Key(path)] = append(p.items[path2Key(path)],
+				item{Name: path2Name(path),
+					Query: "`" + string(b) + "`",
+				},
+			)
 		}
-	}
-	return p, nil
+		return nil
+	})
+
+	return p, err
 }
 
-func (p *memoryPurse) getContents(filename string) (v string, ok bool) {
-	p.mu.RLock()
-	v, ok = p.fs[filename]
-	p.mu.RUnlock()
+func (p *purse) getContents(filename string) (v []item, ok bool) {
+	v, ok = p.items[filename]
 	return
 }
 
-func (p *memoryPurse) files() []string {
-	fs := make([]string, len(p.fs))
+func (p *purse) files() []string {
+	fs := make([]string, len(p.items))
 	i := 0
-	for k := range p.fs {
+	for k := range p.items {
 		fs[i] = k
 		i++
 	}
 	return fs
+}
+
+func path2Key(p string) string {
+	return camel(filepath.Dir(p), true)
+}
+
+func path2Name(p string) string {
+	return camel(filepath.Base(p), true)
+}
+
+func camel(s string, ucFirst bool) string {
+	rs := []rune(s)
+	l := len(rs)
+	buf := make([]rune, 0, l)
+
+	for i := 0; i < l; i++ {
+		if unicode.IsLetter(rs[i]) {
+			if i == 0 && ucFirst || i > 0 && !unicode.IsLetter(rs[i-1]) {
+				buf = append(buf, unicode.ToUpper(rs[i]))
+			} else {
+				buf = append(buf, rs[i])
+			}
+		}
+	}
+
+	return string(buf)
 }
