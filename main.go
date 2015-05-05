@@ -11,51 +11,43 @@ import (
 
 func main() {
 	const (
-		envar   = "GOPACKAGE"
 		defFile = "sqlpurse.go"
+		defIn   = "sqlpurse"
 		defOut  = "./"
+		envar   = "GOPACKAGE"
 	)
-	var in, out, file, name, pkg string
+	var file, in, out, pkg, prefix string
 
-	flag.StringVar(&in, "in", "", "directory of the input SQL file(s)")
+	flag.StringVar(&in, "in", defIn, "directory of the input SQL file(s)")
 	flag.StringVar(&out, "out", defOut, "directory of the output source file")
 	flag.StringVar(&file, "file", defFile, "name of the output source file")
-	flag.StringVar(&name, "name", "gen", "variable name of the generated Purse struct")
 	flag.StringVar(&pkg, "pkg", "", "name of the go package for the generated source file")
+	flag.StringVar(&prefix, "prefix", "", "prefix for struct names")
 	flag.Parse()
 
-	if in == "" {
-		log.Fatalln(errors.New("error: SQL directory must be provided"))
-	}
 	if pkg == "" {
-		if os.Getenv(envar) == "" {
-			log.Fatalln(errors.New("error: package name receiving " +
-				"generated source must be provided"))
+		if out == defOut {
+			if os.Getenv(envar) == "" {
+				log.Fatalln(errors.New("error: package name receiving " +
+					"generated source must be provided"))
+			}
+			pkg = os.Getenv(envar)
+		} else {
+			pkg = filepath.Base(out)
 		}
-		pkg = os.Getenv(envar)
 	}
 
-	p, err := newPurse(in)
+	p, err := newPurse(in, prefix)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	fs := make(map[string][]item, len(p.files()))
-	for _, name := range p.files() {
-		s, ok := p.getContents(name)
-		if !ok {
-			log.Printf("Unable to get file %s", name)
-			continue
-		}
-		fs[name] = s
-	}
-
 	ctx := &tmplContext{
-		Pkg: pkg,
-		Fs:  fs,
+		Pkg:   pkg,
+		Items: p.Items,
 	}
 
-	t, err := template.New(name).Parse(tmpl)
+	t, err := template.New(defIn).Parse(tmpl)
 	if err != nil {
 		log.Fatalln(err)
 	}

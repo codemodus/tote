@@ -4,15 +4,12 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"unicode"
 )
 
-type purser interface {
-	Get(string) (string, bool)
-}
-
 type purse struct {
-	items map[string][]item
+	Items map[string][]item
 }
 
 type item struct {
@@ -20,8 +17,8 @@ type item struct {
 	Query string
 }
 
-func newPurse(dir string) (p *purse, err error) {
-	p = &purse{items: make(map[string][]item)}
+func newPurse(dir, prefix string) (p *purse, err error) {
+	p = &purse{Items: make(map[string][]item)}
 	if _, err = os.Stat(dir); err != nil {
 		return nil, err
 	}
@@ -41,7 +38,8 @@ func newPurse(dir string) (p *purse, err error) {
 			if err != nil {
 				return err
 			}
-			p.items[path2Key(path)] = append(p.items[path2Key(path)],
+			p.Items[path2Key(path, dir, prefix)] = append(
+				p.Items[path2Key(path, dir, prefix)],
 				item{Name: path2Name(path),
 					Query: "`" + string(b) + "`",
 				},
@@ -53,27 +51,19 @@ func newPurse(dir string) (p *purse, err error) {
 	return p, err
 }
 
-func (p *purse) getContents(filename string) (v []item, ok bool) {
-	v, ok = p.items[filename]
-	return
-}
-
-func (p *purse) files() []string {
-	fs := make([]string, len(p.items))
-	i := 0
-	for k := range p.items {
-		fs[i] = k
-		i++
+func path2Key(p, dir, prefix string) string {
+	r := camel(strings.TrimPrefix(filepath.Dir(p), dir), true)
+	if prefix != "" {
+		r = camel(prefix, true) + r
 	}
-	return fs
-}
-
-func path2Key(p string) string {
-	return camel(filepath.Dir(p), true)
+	if r == "" {
+		r = "Root"
+	}
+	return r
 }
 
 func path2Name(p string) string {
-	return camel(filepath.Base(p), true)
+	return camel(strings.TrimSuffix(filepath.Base(p), ".sql"), true)
 }
 
 func camel(s string, ucFirst bool) string {
@@ -88,6 +78,9 @@ func camel(s string, ucFirst bool) string {
 			} else {
 				buf = append(buf, rs[i])
 			}
+		}
+		if unicode.IsNumber(rs[i]) {
+			buf = append(buf, rs[i])
 		}
 	}
 
