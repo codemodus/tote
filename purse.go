@@ -57,7 +57,7 @@ func (p *memoryPurse) getContents(filename string) (v string, ok bool) {
 func (p *memoryPurse) files() []string {
 	fs := make([]string, len(p.fs))
 	i := 0
-	for k, _ := range p.fs {
+	for k := range p.fs {
 		fs[i] = k
 		i++
 	}

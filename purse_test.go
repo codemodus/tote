@@ -37,7 +37,7 @@ func TestNew(t *testing.T) {
 		t.Errorf("invalid number of loaded SQL files")
 	}
 
-	for key, _ := range fixtures {
+	for key := range fixtures {
 		_, ok := s.fs[key]
 		if !ok {
 			t.Errorf("unable to find loaded file %s in file map", key)
@@ -45,7 +45,7 @@ func TestNew(t *testing.T) {
 	}
 
 	// verify only SQL files were loaded
-	for key, _ := range s.fs {
+	for key := range s.fs {
 		if filepath.Ext(key) != ext {
 			t.Errorf("loaded unexpected file type: %s", key)
 		}
@@ -83,7 +83,7 @@ func TestGet(t *testing.T) {
 
 func BenchmarkGet(b *testing.B) {
 	s, _ := newPurse(dirname)
-	var key string = "query_by_slug.sql"
+	key := "query_by_slug.sql"
 
 	for i := 0; i < b.N; i++ {
 		s.getContents(key)

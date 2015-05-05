@@ -27,11 +27,11 @@ func main() {
 	flag.Parse()
 
 	if in == "" {
-		log.Fatalln(errors.New("error: SQL directory must be provided."))
+		log.Fatalln(errors.New("error: SQL directory must be provided"))
 	}
 	if pkg == "" {
 		if os.Getenv(envar) == "" {
-			log.Fatalln(errors.New("error: package name receiving generated source must be provided."))
+			log.Fatalln(errors.New("error: package name receiving generated source must be provided"))
 		}
 		pkg = os.Getenv(envar)
 	}
