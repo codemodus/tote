@@ -1,4 +1,4 @@
-package purse
+package main
 
 import (
 	"path/filepath"
@@ -28,50 +28,50 @@ func init() {
 }
 
 func TestNew(t *testing.T) {
-	s, err := New(dirname)
+	s, err := newPurse(dirname)
 	if err != nil {
 		t.Errorf("unexpected error from New() on fixtures directory")
 	}
 
-	if len(fixtures) != len(s.files) {
+	if len(fixtures) != len(s.fs) {
 		t.Errorf("invalid number of loaded SQL files")
 	}
 
 	for key, _ := range fixtures {
-		_, ok := s.files[key]
+		_, ok := s.fs[key]
 		if !ok {
 			t.Errorf("unable to find loaded file %s in file map", key)
 		}
 	}
 
 	// verify only SQL files were loaded
-	for key, _ := range s.files {
+	for key, _ := range s.fs {
 		if filepath.Ext(key) != ext {
 			t.Errorf("loaded unexpected file type: %s", key)
 		}
 	}
 
 	// try to load file instead of directory
-	_, err = New(filepath.Join(".", "purse.go"))
+	_, err = newPurse(filepath.Join(".", "purse.go"))
 	if err == nil {
 		t.Errorf("expected error trying to load from non-directory")
 	}
 
 	// try to load directory that does not exist
-	_, err = New(filepath.Join(".", "foo"))
+	_, err = newPurse(filepath.Join(".", "foo"))
 	if err == nil {
 		t.Errorf("expected error trying to load directory that does not exist")
 	}
 }
 
 func TestGet(t *testing.T) {
-	s, err := New(dirname)
+	s, err := newPurse(dirname)
 	if err != nil {
 		t.Errorf("unexpected error from New() on fixtures directory")
 	}
 
 	for key, val := range fixtures {
-		v, ok := s.Get(key)
+		v, ok := s.getContents(key)
 		if !ok {
 			t.Errorf("unable to find loaded file %s in file map", key)
 		}
@@ -82,10 +82,10 @@ func TestGet(t *testing.T) {
 }
 
 func BenchmarkGet(b *testing.B) {
-	s, _ := New(dirname)
+	s, _ := newPurse(dirname)
 	var key string = "query_by_slug.sql"
 
 	for i := 0; i < b.N; i++ {
-		s.Get(key)
+		s.getContents(key)
 	}
 }
