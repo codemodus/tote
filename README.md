@@ -1,5 +1,5 @@
 # purse
-
+--
 Purse is a CLI application for generating structs which store SQL queries as
 defined by the directory and file structure supplied (default is "./sqlpurse").
 Only .sql files are read.
@@ -37,3 +37,5 @@ Queries are accessible in this way:
 
 The main caveat seems to be naming collisions which was the primary motivation
 for the prefix flag. Stay aware and problems can be avoided.
+
+This package started as a fork of smotes/purse.

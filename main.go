@@ -33,6 +33,8 @@
 //
 // The main caveat seems to be naming collisions which was the primary
 // motivation for the prefix flag.  Stay aware and problems can be avoided.
+//
+// This package started as a fork of smotes/purse.
 package main
 
 import (
