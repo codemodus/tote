@@ -1,38 +1,38 @@
-# purse
+# tote
 --
-Purse is a CLI application for generating structs which store SQL queries as
-defined by the directory and file structure supplied (default is "./sqlpurse").
+Tote is a CLI application for generating structs which store SQL queries as
+defined by the directory and file structure supplied (default is "./sqltote").
 Only .sql files are read.
 
     Available flags:
     --in={dir}          Set the SQL storage directory.
-    --out={dir}         Set the purse package directory.
-    --file={filename}   Set the purse file name.
-    --pkg={package}     Set the purse package name.
-    --prefix={name}     Set the purse struct prefix.
+    --out={dir}         Set the tote package directory.
+    --file={filename}   Set the tote file name.
+    --pkg={package}     Set the tote package name.
+    --prefix={name}     Set the tote struct prefix.
 
 Normally, this command should be called using go:generate. The following usage
-will produce a package named "pursepkg" within the "pursepkg" directory:
+will produce a package named "totepkg" within the "totepkg" directory:
 
-    //go:generate purse -in=resources/sql/purse -out=pursepkg
+    //go:generate tote -in=resources/sql/tote -out=totepkg
 
-The following usage will add a second file to the "pursepkg" package:
+The following usage will add a second file to the "totepkg" package:
 
-    //go:generate purse -in=other/sql/purse -out=pursepkg -prefix=other -file=other.go
+    //go:generate tote -in=other/sql/tote -out=totepkg -prefix=other -file=other.go
 
 Queries are accessible in this way:
 
-    import "vcs-storage.nil/mycurrentproject/pursepkg"
+    import "vcs-storage.nil/mycurrentproject/totepkg"
 
     func main() {
-    	// File originally located at "./resources/sql/purse/user/all.sql"
-    	fmt.Println(pursepkg.User.All)
+    	// File originally located at "./resources/sql/tote/user/all.sql"
+    	fmt.Println(totepkg.User.All)
 
-    	// File originally located at "./resources/sql/purse/user/role/many_by_user.sql"
-    	fmt.Println(pursepkg.UserRole.ManyByUser)
+    	// File originally located at "./resources/sql/tote/user/role/many_by_user.sql"
+    	fmt.Println(totepkg.UserRole.ManyByUser)
 
-    	// File originally located at "./other/sql/purse/user/one_by_name.sql"
-    	fmt.Println(pursepkg.OtherUser.OneByName)
+    	// File originally located at "./other/sql/tote/user/one_by_name.sql"
+    	fmt.Println(totepkg.OtherUser.OneByName)
     }
 
 The main caveat seems to be naming collisions which was the primary motivation

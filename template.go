@@ -9,7 +9,7 @@ const (
 	tmpl = `package {{.Pkg}}
 
 var (
-{{range $key, $val := .Items}}	// {{$key}} is a generated SQL purse.  Do not modify.
+{{range $key, $val := .Items}}	// {{$key}} is a generated SQL tote.  Do not modify.
 	{{$key}} = struct {
 	{{range $k, $v := $val}}	{{$v.Name}} string
 	{{end}}}{

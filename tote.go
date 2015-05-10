@@ -8,7 +8,7 @@ import (
 	"unicode"
 )
 
-type purse struct {
+type tote struct {
 	Items map[string][]item
 }
 
@@ -17,8 +17,8 @@ type item struct {
 	Query string
 }
 
-func newPurse(dir, prefix string) (p *purse, err error) {
-	p = &purse{Items: make(map[string][]item)}
+func newTote(dir, prefix string) (t *tote, err error) {
+	t = &tote{Items: make(map[string][]item)}
 	if _, err = os.Stat(dir); err != nil {
 		return nil, err
 	}
@@ -38,8 +38,8 @@ func newPurse(dir, prefix string) (p *purse, err error) {
 			if err != nil {
 				return err
 			}
-			p.Items[path2Key(path, dir, prefix)] = append(
-				p.Items[path2Key(path, dir, prefix)],
+			t.Items[path2Key(path, dir, prefix)] = append(
+				t.Items[path2Key(path, dir, prefix)],
 				item{Name: path2Name(path),
 					Query: "`" + string(b) + "`",
 				},
@@ -48,7 +48,7 @@ func newPurse(dir, prefix string) (p *purse, err error) {
 		return nil
 	})
 
-	return p, err
+	return t, err
 }
 
 func path2Key(p, dir, prefix string) string {
