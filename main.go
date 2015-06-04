@@ -75,7 +75,11 @@ func newTote(dir, prefix string) (t *tote, err error) {
 			if err != nil {
 				return err
 			}
-			defer f.Close()
+			defer func() {
+				if err := f.Close(); err != nil {
+					log.Fatalln(err)
+				}
+			}()
 
 			b, err := ioutil.ReadAll(f)
 			if err != nil {
@@ -126,7 +130,11 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Fatalln(err)
+		}
+	}()
 
 	t, err := newTote(in, prefix)
 	if err != nil {
@@ -152,7 +160,9 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	f.Write(fb)
+	if _, err := f.Write(fb); err != nil {
+		log.Fatalln(err)
+	}
 }
 
 func path2Key(p, dir, prefix string) string {
