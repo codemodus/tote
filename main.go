@@ -185,18 +185,84 @@ func camel(s string, ucFirst bool) string {
 	l := len(rs)
 	buf := make([]rune, 0, l)
 
+	var tmpBufCap int
+	for k := range commonInitialisms {
+		if len(k) > tmpBufCap {
+			tmpBufCap = len(k)
+		}
+	}
+
 	for i := 0; i < l; i++ {
 		if unicode.IsLetter(rs[i]) {
+			if i == 0 || !unicode.IsLetter(rs[i-1]) {
+				tmpBuf := make([]rune, 0, tmpBufCap)
+				for n := i; n < l && n-i < tmpBufCap; n++ {
+					tmpBuf = append(tmpBuf, unicode.ToUpper(rs[n]))
+					if n < l-1 && !unicode.IsLetter(rs[n+1]) && !unicode.IsDigit(rs[n+1]) {
+						break
+					}
+				}
+				if commonInitialisms[string(tmpBuf)] {
+					buf = append(buf, tmpBuf...)
+					i += len(tmpBuf)
+					continue
+				}
+				if i+len(tmpBuf) < l-2 && rs[i+len(tmpBuf)] == '-' && rs[i+len(tmpBuf)+1] == '_' {
+					buf = append(buf, tmpBuf...)
+					i += len(tmpBuf)
+					continue
+				}
+			}
+
 			if i == 0 && ucFirst || i > 0 && !unicode.IsLetter(rs[i-1]) {
 				buf = append(buf, unicode.ToUpper(rs[i]))
 			} else {
 				buf = append(buf, rs[i])
 			}
 		}
-		if unicode.IsNumber(rs[i]) {
+		if unicode.IsDigit(rs[i]) {
 			buf = append(buf, rs[i])
 		}
 	}
 
 	return string(buf)
+}
+
+// commonInitialisms - github.com/golang/lint/blob/master/lint.go
+var commonInitialisms = map[string]bool{
+	"API":   true,
+	"ASCII": true,
+	"CPU":   true,
+	"CSS":   true,
+	"DNS":   true,
+	"EOF":   true,
+	"GUID":  true,
+	"HTML":  true,
+	"HTTP":  true,
+	"HTTPS": true,
+	"ID":    true,
+	"IP":    true,
+	"JSON":  true,
+	"LHS":   true,
+	"QPS":   true,
+	"RAM":   true,
+	"RHS":   true,
+	"RPC":   true,
+	"SLA":   true,
+	"SMTP":  true,
+	"SSH":   true,
+	"TCP":   true,
+	"TLS":   true,
+	"TTL":   true,
+	"UDP":   true,
+	"UI":    true,
+	"UID":   true,
+	"UUID":  true,
+	"URI":   true,
+	"URL":   true,
+	"UTF8":  true,
+	"VM":    true,
+	"XML":   true,
+	"XSRF":  true,
+	"XSS":   true,
 }
