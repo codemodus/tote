@@ -1,13 +1,15 @@
 # tote
---
+
+    go get "github.com/codemodus/tote"
+
 Tote is a CLI application for generating structs which store SQL queries as
 defined by the directory and file structure supplied (default is "./sqltote").
 Only .sql files are read.
 
     Available flags:
-    --in={dir}          Set the SQL storage directory.
-    --out={dir}         Set the tote package directory.
-    --file={filename}   Set the tote file name.
+    --in={dir}          Set the SQL storage directory.  // "./sqltote"
+    --out={dir}         Set the tote package directory. // "./"
+    --file={filename}   Set the tote file name.         // "sqltote.go"
     --pkg={package}     Set the tote package name.
     --prefix={name}     Set the tote struct prefix.
 

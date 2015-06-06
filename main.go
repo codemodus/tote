@@ -1,40 +1,3 @@
-// Tote is a CLI application for generating structs which store SQL queries
-// as defined by the directory and file structure supplied (default is
-// "./sqltote").  Only .sql files are read.
-//
-// 	Available flags:
-// 	--in={dir}          Set the SQL storage directory.
-// 	--out={dir}         Set the tote package directory.
-// 	--file={filename}   Set the tote file name.
-// 	--pkg={package}     Set the tote package name.
-// 	--prefix={name}     Set the tote struct prefix.
-//
-// Normally, this command should be called using go:generate.  The following
-// usage will produce a package named "totepkg" within the "totepkg"
-// directory:
-// 	//go:generate tote -in=resources/sql/tote -out=totepkg
-//
-// The following usage will add a second file to the "totepkg" package:
-// 	//go:generate tote -in=other/sql/tote -out=totepkg -prefix=other -file=other.go
-//
-// Queries are accessible in this way:
-// 	import "vcs-storage.nil/mycurrentproject/totepkg"
-//
-// 	func main() {
-// 		// File originally located at "./resources/sql/tote/user/all.sql"
-// 		fmt.Println(totepkg.User.All)
-//
-// 		// File originally located at "./resources/sql/tote/user/role/many_by_user.sql"
-// 		fmt.Println(totepkg.UserRole.ManyByUser)
-//
-// 		// File originally located at "./other/sql/tote/user/one_by_name.sql"
-// 		fmt.Println(totepkg.OtherUser.OneByName)
-// 	}
-//
-// The main caveat seems to be naming collisions which was the primary
-// motivation for the prefix flag.  Stay aware and problems can be avoided.
-//
-// This package started as a fork of smotes/purse.
 package main
 
 import (
@@ -48,7 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 	"text/template"
-	"unicode"
+
+	"github.com/codemodus/kace"
 )
 
 type tote struct {
@@ -60,10 +24,76 @@ type item struct {
 	Query string
 }
 
+type options struct {
+	in        string
+	defIn     string
+	out       string
+	defOut    string
+	file      string
+	defFile   string
+	pkg       string
+	defPkg    string
+	prefix    string
+	defPrefix string
+}
+
+func (opts *options) validate() error {
+	const (
+		envvar = "GOPACKAGE"
+	)
+
+	if opts.pkg != "" {
+		return nil
+	}
+	if opts.out == opts.defOut {
+		if os.Getenv(envvar) == "" {
+			return errors.New("error: package name receiving " +
+				"generated source must be provided")
+		}
+		opts.pkg = os.Getenv(envvar)
+		return nil
+	}
+	opts.pkg = filepath.Base(opts.out)
+	return nil
+}
+
+func path2Name(p string) string {
+	return kace.Camel(strings.TrimSuffix(filepath.Base(p), ".sql"), true)
+}
+
+func path2Key(p, dir, prefix string) string {
+	r := kace.Camel(strings.TrimPrefix(filepath.Dir(p), dir), true)
+	if prefix != "" {
+		r = kace.Camel(prefix+"/"+r, true)
+	}
+	if r == "" {
+		r = "Root"
+	}
+	return r
+}
+
+func newOptions() *options {
+	const (
+		defIn   = "sqltote"
+		defOut  = "./"
+		defFile = "sqltote.go"
+	)
+
+	return &options{
+		in: defIn, defIn: defIn,
+		out: defOut, defOut: defOut,
+		file: defFile, defFile: defFile,
+	}
+}
+
 func newTote(dir, prefix string) (t *tote, err error) {
 	t = &tote{Items: make(map[string][]item)}
-	if _, err = os.Stat(dir); err != nil {
+	fi, err := os.Stat(dir)
+	if err != nil {
 		return nil, err
+	}
+	if !fi.IsDir() {
+		return nil, errors.New("select in directory is a file")
 	}
 
 	err = filepath.Walk(dir, func(path string, i os.FileInfo, e error) error {
@@ -77,7 +107,7 @@ func newTote(dir, prefix string) (t *tote, err error) {
 			}
 			defer func() {
 				if err := f.Close(); err != nil {
-					log.Fatalln(err)
+					panic(err)
 				}
 			}()
 
@@ -94,175 +124,75 @@ func newTote(dir, prefix string) (t *tote, err error) {
 		}
 		return nil
 	})
-
 	return t, err
 }
 
-func main() {
-	const (
-		defFile = "sqltote.go"
-		defIn   = "sqltote"
-		defOut  = "./"
-		envar   = "GOPACKAGE"
-	)
-	var file, in, out, pkg, prefix string
-
-	flag.StringVar(&in, "in", defIn, "directory of the input SQL file(s)")
-	flag.StringVar(&out, "out", defOut, "directory of the output source file")
-	flag.StringVar(&file, "file", defFile, "name of the output source file")
-	flag.StringVar(&pkg, "pkg", "", "name of the go package for the generated source file")
-	flag.StringVar(&prefix, "prefix", "", "prefix for struct names")
-	flag.Parse()
-
-	if pkg == "" {
-		if out == defOut {
-			if os.Getenv(envar) == "" {
-				log.Fatalln(errors.New("error: package name receiving " +
-					"generated source must be provided"))
-			}
-			pkg = os.Getenv(envar)
-		} else {
-			pkg = filepath.Base(out)
-		}
-	}
-
-	f, err := os.Create(filepath.Join(out, file))
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer func() {
-		if err := f.Close(); err != nil {
-			log.Fatalln(err)
-		}
-	}()
-
-	t, err := newTote(in, prefix)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
+func toteToParsedTmpl(opts *options, t *tote) []byte {
 	ctx := &tmplContext{
-		Pkg:   pkg,
+		Pkg:   opts.pkg,
 		Items: t.Items,
 	}
 
 	b := &bytes.Buffer{}
-	pt, err := template.New(defIn).Parse(tmpl)
+	pt, err := template.New("sqltote").Parse(tmpl)
 	if err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 	if err = pt.Execute(b, ctx); err != nil {
-		log.Fatalln(err)
+		panic(err)
 	}
 
 	fb, err := format.Source(b.Bytes())
 	if err != nil {
+		panic(err)
+	}
+	return fb
+}
+
+func mainSub(opts *options) error {
+	fp := filepath.Join(opts.out, opts.file)
+	dir := filepath.Dir(fp)
+	if err := os.MkdirAll(dir, 0775); err != nil {
+		return err
+	}
+	f, err := os.Create(fp)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := f.Close(); err != nil {
+			panic(err)
+		}
+	}()
+
+	t, err := newTote(opts.in, opts.prefix)
+	if err != nil {
+		return err
+	}
+
+	bs := toteToParsedTmpl(opts, t)
+
+	if _, err := f.Write(bs); err != nil {
+		panic(err)
+	}
+	return nil
+}
+
+func main() {
+	opts := newOptions()
+
+	flag.StringVar(&opts.in, "in", opts.defIn, "directory of the input SQL file(s)")
+	flag.StringVar(&opts.out, "out", opts.defOut, "directory of the output source file")
+	flag.StringVar(&opts.file, "file", opts.defFile, "name of the output source file")
+	flag.StringVar(&opts.pkg, "pkg", opts.defPkg, "name of the go package for the generated source file")
+	flag.StringVar(&opts.prefix, "prefix", opts.defPrefix, "prefix for struct names")
+	flag.Parse()
+
+	if err := opts.validate(); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := mainSub(opts); err != nil {
 		log.Fatalln(err)
 	}
-
-	if _, err := f.Write(fb); err != nil {
-		log.Fatalln(err)
-	}
-}
-
-func path2Key(p, dir, prefix string) string {
-	r := camel(strings.TrimPrefix(filepath.Dir(p), dir), true)
-	if prefix != "" {
-		r = camel(prefix, true) + r
-	}
-	if r == "" {
-		r = "Root"
-	}
-	return r
-}
-
-func path2Name(p string) string {
-	return camel(strings.TrimSuffix(filepath.Base(p), ".sql"), true)
-}
-
-func camel(s string, ucFirst bool) string {
-	rs := []rune(s)
-	l := len(rs)
-	buf := make([]rune, 0, l)
-
-	var tmpBufCap int
-	for k := range commonInitialisms {
-		if len(k) > tmpBufCap {
-			tmpBufCap = len(k)
-		}
-	}
-
-	for i := 0; i < l; i++ {
-		if unicode.IsLetter(rs[i]) {
-			if i == 0 || !unicode.IsLetter(rs[i-1]) {
-				tmpBuf := make([]rune, 0, tmpBufCap)
-				for n := i; n < l && n-i < tmpBufCap; n++ {
-					tmpBuf = append(tmpBuf, unicode.ToUpper(rs[n]))
-					if n < l-1 && !unicode.IsLetter(rs[n+1]) && !unicode.IsDigit(rs[n+1]) {
-						break
-					}
-				}
-				if commonInitialisms[string(tmpBuf)] {
-					buf = append(buf, tmpBuf...)
-					i += len(tmpBuf)
-					continue
-				}
-				if i+len(tmpBuf) < l-2 && rs[i+len(tmpBuf)] == '-' && rs[i+len(tmpBuf)+1] == '_' {
-					buf = append(buf, tmpBuf...)
-					i += len(tmpBuf)
-					continue
-				}
-			}
-
-			if i == 0 && ucFirst || i > 0 && !unicode.IsLetter(rs[i-1]) {
-				buf = append(buf, unicode.ToUpper(rs[i]))
-			} else {
-				buf = append(buf, rs[i])
-			}
-		}
-		if unicode.IsDigit(rs[i]) {
-			buf = append(buf, rs[i])
-		}
-	}
-
-	return string(buf)
-}
-
-// commonInitialisms - github.com/golang/lint/blob/master/lint.go
-var commonInitialisms = map[string]bool{
-	"API":   true,
-	"ASCII": true,
-	"CPU":   true,
-	"CSS":   true,
-	"DNS":   true,
-	"EOF":   true,
-	"GUID":  true,
-	"HTML":  true,
-	"HTTP":  true,
-	"HTTPS": true,
-	"ID":    true,
-	"IP":    true,
-	"JSON":  true,
-	"LHS":   true,
-	"QPS":   true,
-	"RAM":   true,
-	"RHS":   true,
-	"RPC":   true,
-	"SLA":   true,
-	"SMTP":  true,
-	"SSH":   true,
-	"TCP":   true,
-	"TLS":   true,
-	"TTL":   true,
-	"UDP":   true,
-	"UI":    true,
-	"UID":   true,
-	"UUID":  true,
-	"URI":   true,
-	"URL":   true,
-	"UTF8":  true,
-	"VM":    true,
-	"XML":   true,
-	"XSRF":  true,
-	"XSS":   true,
 }
