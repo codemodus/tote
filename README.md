@@ -7,14 +7,16 @@ defined by the directory and file structure supplied (default is "./sqltote").
 Only .sql files are read.
 
     Available flags:
+
     --in={dir}          Set the SQL storage directory.  // "./sqltote"
     --out={dir}         Set the tote package directory. // "./"
     --file={filename}   Set the tote file name.         // "sqltote.go"
     --pkg={package}     Set the tote package name.
     --prefix={name}     Set the tote struct prefix.
 
-Normally, this command should be called using go:generate. The following usage
-will produce a package named "totepkg" within the "totepkg" directory:
+Normally, this command should be called using go:generate.  If called from the 
+command line, "pkg" must be set.  The following usage will produce a package 
+named "totepkg" within the "totepkg" directory:
 
     //go:generate tote -in=resources/sql/tote -out=totepkg
 
@@ -24,7 +26,7 @@ The following usage will add a second file to the "totepkg" package:
 
 Queries are accessible in this way:
 
-    import "vcs-storage.nil/mycurrentproject/totepkg"
+    import "gitreposrus.com/myproject/totepkg"
 
     func main() {
     	// File originally located at "./resources/sql/tote/user/all.sql"
