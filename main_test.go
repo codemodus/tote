@@ -120,10 +120,18 @@ func TestFSExtended(t *testing.T) {
 		}
 	}()
 
+	opts.in = ""
+	if err := opts.validate(); err != nil {
+		t.Fatal("unexpected error during validation (FS setup 2)")
+	}
+	if err := mainSub(opts); err == nil {
+		t.Fatal("Expected error (no file is accepted)")
+	}
+
 	opts.out = "sqltote/empty"
 	opts.in = opts.defIn
 	if err := opts.validate(); err != nil {
-		t.Fatal("unexpected error during validation (FS setup 2)")
+		t.Fatal("unexpected error during validation (FS setup 3)")
 	}
 	if err := mainSub(opts); err == nil {
 		t.Fatal("Expected error (directory overwrites file)")
@@ -132,7 +140,7 @@ func TestFSExtended(t *testing.T) {
 	opts.out = "sqltote"
 	opts.file = "bad_dir"
 	if err := opts.validate(); err != nil {
-		t.Fatal("unexpected error during validation (FS setup 3)")
+		t.Fatal("unexpected error during validation (FS setup 4)")
 	}
 	if err := mainSub(opts); err == nil {
 		t.Fatal("Expected error (file overwrites directory)")

@@ -15,15 +15,6 @@ import (
 	"github.com/codemodus/kace"
 )
 
-type tote struct {
-	Items map[string][]item
-}
-
-type item struct {
-	Name  string
-	Query string
-}
-
 type options struct {
 	in        string
 	defIn     string
@@ -35,6 +26,15 @@ type options struct {
 	defPkg    string
 	prefix    string
 	defPrefix string
+}
+
+type item struct {
+	Name  string
+	Query string
+}
+
+type tote struct {
+	Items map[string][]item
 }
 
 func (opts *options) validate() error {
@@ -127,28 +127,6 @@ func newTote(dir, prefix string) (t *tote, err error) {
 	return t, err
 }
 
-func toteToParsedTmpl(opts *options, t *tote) []byte {
-	ctx := &tmplContext{
-		Pkg:   opts.pkg,
-		Items: t.Items,
-	}
-
-	b := &bytes.Buffer{}
-	pt, err := template.New("sqltote").Parse(tmpl)
-	if err != nil {
-		panic(err)
-	}
-	if err = pt.Execute(b, ctx); err != nil {
-		panic(err)
-	}
-
-	fb, err := format.Source(b.Bytes())
-	if err != nil {
-		panic(err)
-	}
-	return fb
-}
-
 func mainSub(opts *options) error {
 	fp := filepath.Join(opts.out, opts.file)
 	dir := filepath.Dir(fp)
@@ -170,7 +148,24 @@ func mainSub(opts *options) error {
 		return err
 	}
 
-	bs := toteToParsedTmpl(opts, t)
+	ctx := &tmplContext{
+		Pkg:   opts.pkg,
+		Items: t.Items,
+	}
+
+	b := &bytes.Buffer{}
+	pt, err := template.New("sqltote").Parse(tmpl)
+	if err != nil {
+		panic(err)
+	}
+	if err = pt.Execute(b, ctx); err != nil {
+		panic(err)
+	}
+
+	bs, err := format.Source(b.Bytes())
+	if err != nil {
+		panic(err)
+	}
 
 	if _, err := f.Write(bs); err != nil {
 		panic(err)
