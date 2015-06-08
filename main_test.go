@@ -50,6 +50,11 @@ func TestMultiple(t *testing.T) {
 	if err := mainSub(opts0); err != nil {
 		t.Fatal(err)
 	}
+	defer func() {
+		if err := cleanup(opts0.defFile); err != nil {
+			t.Fatal(err)
+		}
+	}()
 
 	opts1 := newOptions()
 	opts1.out = testToteDir
@@ -59,6 +64,11 @@ func TestMultiple(t *testing.T) {
 	if err := mainSub(opts1); err != nil {
 		t.Fatal(err)
 	}
+	defer func() {
+		if err := cleanup(filepath.Dir(testToteDir)); err != nil {
+			t.Fatal(err)
+		}
+	}()
 
 	opts2 := newOptions()
 	opts2.out = testToteDir
@@ -91,10 +101,6 @@ func TestMultiple(t *testing.T) {
 			)
 		}
 	}
-
-	if err := cleanup(); err != nil {
-		t.Fatal(err)
-	}
 }
 
 func TestFSExtended(t *testing.T) {
@@ -107,6 +113,12 @@ func TestFSExtended(t *testing.T) {
 	if err := mainSub(opts); err == nil {
 		t.Fatal("Expected error (empty file is read as dir)")
 	}
+
+	defer func() {
+		if err := cleanup(opts.defFile); err != nil {
+			t.Fatal(err)
+		}
+	}()
 
 	opts.out = "sqltote/empty"
 	opts.in = opts.defIn
@@ -124,10 +136,6 @@ func TestFSExtended(t *testing.T) {
 	}
 	if err := mainSub(opts); err == nil {
 		t.Fatal("Expected error (file overwrites directory)")
-	}
-
-	if err := cleanup(); err != nil {
-		t.Fatal(err)
 	}
 }
 
@@ -166,15 +174,12 @@ func compareFiles(filepath1, filepath2 string) (bool, error) {
 	}
 }
 
-func cleanup() error {
-	if _, err := os.Stat(filepath.Dir(testToteDir)); err == nil {
-		if err := os.RemoveAll(filepath.Dir(testToteDir)); err != nil {
-			return err
-		}
+func cleanup(path string) error {
+	if path == "./" || path == "" {
+		return errors.New("Cannot remove project directory.")
 	}
-
-	if _, err := os.Stat("sqltote.go"); err == nil {
-		if err := os.Remove("sqltote.go"); err != nil {
+	if _, err := os.Stat(path); err == nil {
+		if err := os.RemoveAll(path); err != nil {
 			return err
 		}
 	}
