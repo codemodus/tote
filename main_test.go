@@ -31,7 +31,7 @@ func TestOptions(t *testing.T) {
 		t.Fatal("unexpected error during validation (custom out)")
 	}
 
-	opts.pkg = "sqltote"
+	opts.pkg = testRefDir
 	if err := opts.validate(); err != nil {
 		t.Fatal("unexpected error during validation (pkg set)")
 	}
@@ -85,9 +85,9 @@ func TestMultiple(t *testing.T) {
 		fRef string
 		fOut string
 	}{
-		{testRefDir + "/sqltote_root.go", testToteDir + "/sqltote.go"},
-		{testRefDir + "/sqltote_extra.go", testToteDir + "/sqltote_extra.go"},
-		{testRefDir + "/sqltote_main.go", "sqltote.go"},
+		{testRefDir + "/sqltote_root.go.test", testToteDir + "/sqltote.go"},
+		{testRefDir + "/sqltote_extra.go.test", testToteDir + "/sqltote_extra.go"},
+		{testRefDir + "/sqltote_main.go.test", "sqltote.go"},
 	}
 
 	for _, v := range tests {
