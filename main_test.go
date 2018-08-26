@@ -37,7 +37,7 @@ func TestOptions(t *testing.T) {
 	}
 
 	if err := os.Unsetenv("GOPACKAGE"); err != nil {
-		t.Fatal(`Could not unset "GOPACKAGE" envar`)
+		t.Fatal(`could not unset "GOPACKAGE" envar`)
 	}
 }
 
@@ -96,7 +96,7 @@ func TestMultiple(t *testing.T) {
 			t.Fatal(err)
 		}
 		if !ok {
-			t.Errorf(`Generated file "%v" not equal to reference "%v".`,
+			t.Errorf(`generated file "%v" not equal to reference "%v"`,
 				v.fOut, v.fRef,
 			)
 		}
@@ -111,7 +111,7 @@ func TestFSExtended(t *testing.T) {
 		t.Fatal("unexpected error during validation (FS setup 1)")
 	}
 	if err := mainSub(opts); err == nil {
-		t.Fatal("Expected error (empty file is read as dir)")
+		t.Fatal("expected error (empty file is read as dir)")
 	}
 
 	defer func() {
@@ -125,7 +125,7 @@ func TestFSExtended(t *testing.T) {
 		t.Fatal("unexpected error during validation (FS setup 2)")
 	}
 	if err := mainSub(opts); err == nil {
-		t.Fatal("Expected error (no file is accepted)")
+		t.Fatal("expected error (no file is accepted)")
 	}
 
 	opts.out = "sqltote/empty"
@@ -134,7 +134,7 @@ func TestFSExtended(t *testing.T) {
 		t.Fatal("unexpected error during validation (FS setup 3)")
 	}
 	if err := mainSub(opts); err == nil {
-		t.Fatal("Expected error (directory overwrites file)")
+		t.Fatal("expected error (directory overwrites file)")
 	}
 
 	opts.out = "sqltote"
@@ -143,7 +143,7 @@ func TestFSExtended(t *testing.T) {
 		t.Fatal("unexpected error during validation (FS setup 4)")
 	}
 	if err := mainSub(opts); err == nil {
-		t.Fatal("Expected error (file overwrites directory)")
+		t.Fatal("expected error (file overwrites directory)")
 	}
 }
 
@@ -184,7 +184,7 @@ func compareFiles(filepath1, filepath2 string) (bool, error) {
 
 func cleanup(path string) error {
 	if path == "./" || path == "" {
-		return errors.New("Cannot remove project directory.")
+		return errors.New("cannot remove project directory")
 	}
 	if _, err := os.Stat(path); err == nil {
 		if err := os.RemoveAll(path); err != nil {
