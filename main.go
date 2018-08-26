@@ -58,13 +58,13 @@ func (opts *options) validate() error {
 }
 
 func path2Name(p string) string {
-	return kace.Camel(strings.TrimSuffix(filepath.Base(p), ".sql"), true)
+	return kace.Pascal(strings.TrimSuffix(filepath.Base(p), ".sql"))
 }
 
 func path2Key(p, dir, prefix string) string {
-	r := kace.Camel(strings.TrimPrefix(filepath.Dir(p), dir), true)
+	r := kace.Pascal(strings.TrimPrefix(filepath.Dir(p), dir))
 	if prefix != "" {
-		r = kace.Camel(prefix+"/"+r, true)
+		r = kace.Pascal(prefix + "/" + r)
 	}
 	if r == "" {
 		r = "Root"
@@ -96,17 +96,17 @@ func newTote(dir, prefix string) (t *tote, err error) {
 		return nil, errors.New("select in directory is a file")
 	}
 
-	err = filepath.Walk(dir, func(path string, i os.FileInfo, e error) error {
+	werr := filepath.Walk(dir, func(path string, i os.FileInfo, e error) error {
 		if e != nil {
 			return e
 		}
 		if !i.IsDir() && filepath.Ext(path) == ".sql" {
-			f, err := os.Open(path)
+			f, err := os.Open(path) // nolint: gosec
 			if err != nil {
 				return err
 			}
 			defer func() {
-				if err := f.Close(); err != nil {
+				if err = f.Close(); err != nil {
 					panic(err)
 				}
 			}()
@@ -124,13 +124,13 @@ func newTote(dir, prefix string) (t *tote, err error) {
 		}
 		return nil
 	})
-	return t, err
+	return t, werr
 }
 
 func mainSub(opts *options) error {
 	fp := filepath.Join(opts.out, opts.file)
 	dir := filepath.Dir(fp)
-	if err := os.MkdirAll(dir, 0775); err != nil {
+	if err := os.MkdirAll(dir, 0750); err != nil {
 		return err
 	}
 	f, err := os.Create(fp)
@@ -138,7 +138,7 @@ func mainSub(opts *options) error {
 		return err
 	}
 	defer func() {
-		if err := f.Close(); err != nil {
+		if err = f.Close(); err != nil {
 			panic(err)
 		}
 	}()
